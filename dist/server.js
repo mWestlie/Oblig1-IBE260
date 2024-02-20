@@ -3,13 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+//SERVER.TS
 const express_1 = __importDefault(require("express"));
 const deck_1 = require("./deck");
+const messages_1 = require("./messages");
 const app = (0, express_1.default)();
 const port = 8000;
 app.use(express_1.default.json()); //Middleware for å parse JSON-bodies
 const players = []; //Array for på lagre spillerne
 const teams = ["Nord", "Sør", "Øst", "Vest"]; //Mulige lag for spillerne
+const dealerIndex = 0;
+const messageHandler = new messages_1.MessageHandler(players, dealerIndex);
 //Post endepunkt for å registrere spillere
 app.post("/register", (req, res) => {
     //Sjekker om det er 4 spillere registrert
@@ -37,15 +41,12 @@ app.post("/register", (req, res) => {
 //Post endepunkt for å sende meldinger
 app.post("/meldinger", (req, res) => {
     const { username, team, message } = req.body;
-    //Finn spilleren som sender meldingen
-    const player = players.find((p) => p.username === username);
-    if (!player) {
-        return res.status(404).send("Spiller ikke funnet");
-    }
-    //Legg til meldingen i spillerens message arraye
-    player.messages.push(message);
-    //Sender bekreft3lse til brukeren
-    res.status(200).send(`Melding mottat fra ${username} (${team}): ${message}`);
+    const response = messageHandler.receiveMessage(username, message);
+    res.send(response);
+});
+app.post("/nyRunde", (req, res) => {
+    messageHandler.rotateDealer();
+    res.status(200).send("En ny runde er startet og dealeren er rotert");
 });
 //Get endepunkt for å se spillerne
 app.get("/spiller", (req, res) => {

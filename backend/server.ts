@@ -1,6 +1,8 @@
+//SERVER.TS
 import express, { Express, Request, Response } from "express";
 import { Player } from "./players";
 import { dealCards } from "./deck";
+import { MessageHandler } from "./messages";
 
 const app: Express = express();
 const port = 8000;
@@ -8,6 +10,8 @@ app.use(express.json()); //Middleware for å parse JSON-bodies
 
 const players: Player[] = []; //Array for på lagre spillerne
 const teams = ["Nord", "Sør", "Øst", "Vest"]; //Mulige lag for spillerne
+const dealerIndex = 0;
+const messageHandler = new MessageHandler(players, dealerIndex);
 
 //Post endepunkt for å registrere spillere
 app.post("/register", (req: Request, res: Response) => {
@@ -41,17 +45,13 @@ app.post("/register", (req: Request, res: Response) => {
 app.post("/meldinger", (req: Request, res: Response) => {
 	const { username, team, message } = req.body;
 
-	//Finn spilleren som sender meldingen
-	const player = players.find((p) => p.username === username);
-	if (!player) {
-		return res.status(404).send("Spiller ikke funnet");
-	}
+	const response = messageHandler.receiveMessage(username, message);
+	res.send(response);
+});
 
-	//Legg til meldingen i spillerens message arraye
-	player.messages.push(message);
-
-	//Sender bekreft3lse til brukeren
-	res.status(200).send(`Melding mottat fra ${username} (${team}): ${message}`);
+app.post("/nyRunde", (req: Request, res: Response) => {
+	messageHandler.rotateDealer();
+	res.status(200).send("En ny runde er startet og dealeren er rotert");
 });
 
 //Get endepunkt for å se spillerne

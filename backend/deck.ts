@@ -1,3 +1,4 @@
+//DECK.TS
 import { Player } from "./players";
 
 //Definerer interface for et kort
